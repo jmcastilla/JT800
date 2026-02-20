@@ -16,7 +16,7 @@ function parse_ID_32_LockStatus(valorHex) {
     const binary = lockValue.toString(2).padStart(32, '0').split('').reverse();
 
     // Obtención del Lock Event ID (Bits 0-5)
-    let lockEventID = 0; 
+    let lockEventID = 0;
     if ((lockValue & 0x01)) lockEventID = 1;      // Bluetooth
     else if ((lockValue & 0x02)) lockEventID = 2; // RFID
     else if ((lockValue & 0x04)) lockEventID = 3; // Password
@@ -35,74 +35,6 @@ function parse_ID_32_LockStatus(valorHex) {
 }
 
 
-// function process_0B(valorHex) {
-//     const result = {
-//         id_rfid: '',
-//         id_pass: '',
-//         raw_content: valorHex
-//     };
-
-    
-//     const infoLength = valorHex.substr(0, 2).toUpperCase();
-//     result.infoLength;
-    
-//    let content = valorHex.substr(2, parseInt(infoLength, 16) * 2);
-
-//     // REGLA ESPECIAL: Si termina en '65', se omite ese byte
-//     if (content.endsWith('65')) {
-//         content = content.slice(0, -2);
-//     }
-//     console.log(infoLength);
-//     // console.log(`Add information lenth: ${infoLength}`);
-//     // console.log(`Add content: ${content}`);
-
-//     switch (infoLength) {
-//         case "01": 
-//         case "02": 
-//         case "03":
-//         case "05": 
-//         case "06":
-//         case "07":
-//         case "08":
-//         case "10":
-//         case "11":
-//         case "18":
-//         case "19":
-//         case "20":
-//         case "28":
-//         case "29":
-//         case "1F":
-//         case "1E":
-//             //Convertir a ASCII
-//             result.id_pass = Buffer.from(content, 'hex').toString('ascii').trim();
-//             break;
-
-//         case "22": // RFID No autorizado
-//         case "23": // RFID Autorizado
-//         case "2A":
-//         case "2B":    
-//         //Convertir a Decimal
-//             try {
-//                 result.id_rfid = BigInt("0x" + content).toString();
-//             } catch (e) {
-//                 result.id_rfid = content;
-//             }
-//             break;
-
-//         // case "0B": // Evento general de estado
-//         // case "0C":
-//         // case "0D":
-//         // case "12":
-//         // case "1C":
-//         // case "34":
-//         // case "35":    
-//         //     result.code_event; 
-//         //     break;
-//     }
-
-//     return result;
-// }
-
 function process_0B(valorHex) {
     const result = {
         code_event: '',
@@ -114,12 +46,12 @@ function process_0B(valorHex) {
 
     // 1. Extraer la longitud (Additional Information Length)
     const infoLength = valorHex.substr(0, 2).toUpperCase();
-    
+
     // Asignar el valor directamente al objeto que se va a retornar
-    result.code_event = infoLength; 
+    result.code_event = infoLength;
 
     // 2. Extraer el contenido basado en la longitud
-    // Importante: multiplicar por 2 porque cada byte son 2 caracteres hex
+
     let content = valorHex.substr(2, parseInt(infoLength, 16) * 2);
 
     // REGLA ESPECIAL: Si termina en '65', se omite ese byte
@@ -142,10 +74,10 @@ function process_0B(valorHex) {
             break;
 
         // Casos que se deben tratar como DECIMAL (Tarjetas RFID)
-        case "22": 
-        case "23": 
+        case "22":
+        case "23":
         case "2A":
-        case "2B":    
+        case "2B":
             try {
                 // Convertir a Decimal usando BigInt para evitar pérdida de precisión
                 result.id_rfid = BigInt("0x" + content).toString();
@@ -186,7 +118,7 @@ function field_Extended_information(aux_info) {
         switch (id) {
             case "30": res.gsm_signal = parseInt(valor, 16); break;
             case "31": res.satellites = parseInt(valor, 16); break;
-            case "32": 
+            case "32":
                 const lockDetails = parse_ID_32_LockStatus(valor);
                 res.device_status_expansion = parseInt(valor, 16);
                 res.lock_event_id_32 = lockDetails.lock_event_id_32;
@@ -213,26 +145,28 @@ function field_Extended_information(aux_info) {
             case "ef": res.hardware_version = Buffer.from(valor, 'hex').toString('ascii'); break;
             case "f2": res.imei_ascii = Buffer.from(valor, 'hex').toString('ascii'); break;
             case "f4": res.network_type = parseInt(valor, 16); break;
-            case "f5":                 
-                lumenUni= parseInt(valor, 16);
-                res.lumenUni;
+            case "f5":
+                const valorLumen = parseInt(valor, 16);
+                console.log("intensidad de luz: " + valorLumen);
+                res.lumenUni = valorLumen; // ASIGNACIÓN CORRECTA
+                break;
                 break;
             case "f9": res.protocol_version = parseInt(valor, 16); break;
-            case "fa": 
+            case "fa":
                 res.x_axis = toSignedInt16(parseInt(valor.substr(0, 4), 16));
                 res.y_axis = toSignedInt16(parseInt(valor.substr(4, 4), 16));
                 res.z_axis = toSignedInt16(parseInt(valor.substr(8, 4), 16));
                 break;
             case "fc": res.bluetooth_status = parseInt(valor, 16); break;
-            case "fd": 
+            case "fd":
                 res.mcc = parseInt(valor.substr(0, 4), 16);
                 res.mnc = parseInt(valor.substr(4, 4), 16);
                 res.cell_id = parseInt(valor.substr(8, 8), 16);
                 res.lac = parseInt(valor.substr(16, 4), 16);
                 break;
             case "fe": res.mileage = parseInt(valor, 16); break;
-            case "0b": 
-                const stepResult = process_0B(valor);                
+            case "0b":
+                const stepResult = process_0B(valor);
                 res.code_event = stepResult.code_event;
                 res.id_rfid = stepResult.id_rfid;
                 res.id_pass = stepResult.id_pass;
@@ -270,7 +204,7 @@ function procesarCadena(cadena) {
             gps_use_position_enable:st_bin[18] ==='1'? 1:0,
             BeiDou_use_position_enable:st_bin[19] ==='1'? 1:0,
             rope_is_cut: st_bin[20] === '1' ? 1 : 0,
-            motor_is_unlocked: st_bin[21] === '1' ? 1 : 0,            
+            motor_is_unlocked: st_bin[21] === '1' ? 1 : 0,
             device_sleep: st_bin[31] === '1' ? 1 : 0
         };
 
@@ -310,7 +244,7 @@ function procesarCadena(cadena) {
             proto_ver: ext.protocol_version, //
             lumenUni: ext.lumenUni ,//
             gnss_status: ext.gnss_module_status,
-            
+
             // Eventos Cerradura
             code_event: ext.code_event, //
             id_rfid: ext.id_rfid , //
